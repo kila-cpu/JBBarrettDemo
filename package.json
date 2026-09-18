@@ -1,0 +1,8 @@
+{
+  "name": "jbbarrettdemo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "J.B. Barrett Tractors — sales rep mobile app demo (quotes, sales orders, leads, site visits, stock)",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

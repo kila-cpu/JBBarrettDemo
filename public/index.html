@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.B. Barrett Tractors — Sales App Demo</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --navy:#1B1A4E; --navy-dark:#12123A; --green:#5CB947; --green-dark:#3B8C2C;
+    --blue:#4A47A3; --purple:#6B46C1; --amber:#e65100; --ink:#1a1a1a; --mid:#666; --soft:#8a8a8a;
+    --line:#ececec; --bg:#f6f6f7;
+  }
+  html,body{height:100%}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:var(--ink);margin:0;
+       background:#14131c;background-image:radial-gradient(circle at 50% 0%,#23213a 0%,#0e0d14 62%);
+       display:grid;place-items:center;overflow:hidden;-webkit-font-smoothing:antialiased}
+
+  /* ── HANDSET ── */
+  /* Fixed 390 x 844; fitPhone() picks a zoom that fits the window. zoom, not
+     transform — it scales the layout box too, so nothing is left to scroll. */
+  .phone{position:relative;width:390px;height:844px;flex:0 0 390px;zoom:var(--phone-scale,1);
+         background:linear-gradient(160deg,#4a4e59,#2b2f37 26%,#1d2026);border-radius:56px;padding:11px;
+         box-shadow:0 2px 0 rgba(255,255,255,.09) inset,0 44px 90px -22px rgba(0,0,0,.85),0 0 0 1px rgba(0,0,0,.5)}
+  .phone::before,.phone::after{content:"";position:absolute;background:linear-gradient(90deg,#3a3e47,#22262d);border-radius:2px}
+  .phone::before{left:-2.5px;top:186px;width:3px;height:62px;box-shadow:0 82px 0 #2b2f37,0 -76px 0 #2b2f37}
+  .phone::after{right:-2.5px;top:214px;width:3px;height:96px}
+  .screen{position:relative;width:100%;height:100%;border-radius:46px;overflow:hidden;background:#fff;
+          display:flex;flex-direction:column}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:108px;height:31px;
+          background:#000;border-radius:20px;z-index:60}
+  .island::after{content:"";position:absolute;right:9px;top:9.5px;width:11px;height:11px;border-radius:50%;
+                 background:#0d1b2a;box-shadow:0 0 0 1px rgba(255,255,255,.07) inset}
+  .statusbar{height:46px;flex:0 0 46px;display:flex;align-items:center;padding:0 30px 0 34px;font-size:14px;
+             font-weight:650;background:#fff;color:var(--ink);z-index:30;font-variant-numeric:tabular-nums}
+  .statusbar .sp{flex:1}
+  .statusbar .icons{display:flex;align-items:center;gap:6px}
+  .statusbar.on-navy{background:var(--navy);color:#fff}
+  .homebar{height:22px;flex:0 0 22px;background:#fff;display:grid;place-items:center;z-index:30}
+  .homebar i{display:block;width:136px;height:5px;border-radius:5px;background:rgba(20,19,28,.26)}
+  .app{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg)}
+  .body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .body::-webkit-scrollbar{width:0}
+
+  /* ── LOGO ── */
+  .logo{display:inline-block;line-height:1;user-select:none}
+  .logo .l1{font-size:17px;font-weight:900;letter-spacing:-.3px;color:var(--navy);white-space:nowrap}
+  .logo .lbar{height:6px;background:var(--green);margin:3.5px 0;border-radius:1px}
+  .logo .l2{font-size:10.5px;font-weight:900;letter-spacing:6.25px;color:var(--navy);text-align:center;padding-left:6.25px}
+  .logo.rev .l1,.logo.rev .l2{color:#fff}
+  .logo.big .l1{font-size:23px}
+  .logo.big .lbar{height:8px;margin:5px 0}
+  .logo.big .l2{font-size:14px;letter-spacing:8.6px;padding-left:8.6px}
+
+  /* ── HEADER ── */
+  .hero{background:var(--navy);padding:6px 18px 20px;color:#fff;flex-shrink:0}
+  .hero-top{display:flex;justify-content:space-between;align-items:center}
+  .bell{font-size:17px;cursor:pointer;position:relative;padding:4px}
+  .bell .dot{position:absolute;top:0;right:0;min-width:15px;height:15px;background:#ffcf33;color:#5a3b00;border-radius:8px;font-size:9px;font-weight:800;
+             display:flex;align-items:center;justify-content:center;padding:0 3px}
+  .greet{font-size:12px;color:rgba(255,255,255,.75);margin-top:12px}
+  .who{font-size:21px;font-weight:700;letter-spacing:-.3px}
+  .weather{position:absolute;right:18px;bottom:16px;text-align:right;font-size:10px;color:rgba(255,255,255,.7)}
+
+  .navbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line);flex-shrink:0}
+  .back{font-size:19px;color:var(--navy);cursor:pointer;line-height:1;padding:2px 4px;user-select:none}
+  .navtitle{font-size:15px;font-weight:700;letter-spacing:-.2px}
+  .navsub{font-size:10.5px;color:var(--soft);font-weight:500}
+  .nav-action{margin-left:auto;font-size:12px;color:var(--green);font-weight:600;cursor:pointer}
+
+  /* ── STATS ── */
+  .stats{display:flex;gap:8px;padding:12px 12px 4px}
+  .stat{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 10px;cursor:pointer;transition:.12s}
+  .stat:active{transform:scale(.97)}
+  .stat .n{font-size:19px;font-weight:800;letter-spacing:-.6px}
+  .stat .l{font-size:9.5px;color:var(--soft);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:1px}
+
+  /* ── TILES ── */
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 12px 12px;cursor:pointer;transition:.12s;position:relative}
+  .tile:active{transform:scale(.97)}
+  .tile .ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:8px}
+  .tile .t{font-size:13.5px;font-weight:700;letter-spacing:-.2px}
+  .tile .s{font-size:10.5px;color:var(--soft);margin-top:1px}
+  .tile-count{position:absolute;top:12px;right:12px;background:var(--navy);color:#fff;min-width:20px;height:20px;border-radius:10px;font-size:10.5px;
+              font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px}
+
+  /* ── BOTTOM NAV ── */
+  .tabbar{background:#fff;border-top:1px solid var(--line);padding:8px 28px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .tabitem{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-size:19px;opacity:.5;transition:.12s;width:56px}
+  .tabitem span{font-size:9.5px;font-weight:600;color:var(--soft)}
+  .tabitem.on{opacity:1}
+  .tabitem.on span{color:var(--navy)}
+  .fab{width:46px;height:46px;background:var(--navy);border-radius:15px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;
+       font-weight:300;cursor:pointer;box-shadow:0 2px 6px rgba(27,26,78,.28);transition:.15s;flex-shrink:0}
+  .fab:active{transform:scale(.92)}
+
+  /* ── LISTS ── */
+  .pad{padding:12px}
+  .searchrow{display:flex;gap:7px;padding:10px 12px 6px;background:var(--bg);flex-shrink:0}
+  .srch{flex:1;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--ink)}
+  .srch:focus{outline:none;border-color:var(--navy)}
+  .chips{display:flex;gap:6px;padding:4px 12px 10px;overflow-x:auto;flex-shrink:0;background:var(--bg)}
+  .chips::-webkit-scrollbar{height:0}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:14px;padding:5px 11px;font-size:11.5px;font-weight:600;color:var(--mid);
+        cursor:pointer;white-space:nowrap;font-family:inherit}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .row{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;margin-bottom:9px;cursor:pointer;transition:.12s}
+  .row:active{background:#fafafa}
+  .row-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .row-title{font-size:14px;font-weight:700;letter-spacing:-.2px}
+  .row-meta{font-size:11.5px;color:var(--soft);margin-top:2px;line-height:1.45}
+  .row-actions{display:flex;gap:5px;margin-top:9px}
+  .abtn{flex:1;padding:7px 6px;border:none;border-radius:8px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .abtn:active{filter:brightness(.9)}
+  .abtn.ghost{background:#f2f2f3;color:var(--mid)}
+  .empty{text-align:center;padding:44px 24px;color:var(--soft)}
+  .empty .e{font-size:34px;margin-bottom:10px;opacity:.5}
+  .empty .m{font-size:13px;line-height:1.6}
+
+  /* ── BADGES ── */
+  .bdg{display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:10.5px;font-weight:700;white-space:nowrap;letter-spacing:.1px}
+  .b-new{background:#eef2ff;color:#3730a3}
+  .b-contacted{background:#e3f2fd;color:#0d47a1}
+  .b-progress{background:#fff6e5;color:#b45309}
+  .b-hold{background:#f3f4f6;color:#4b5563}
+  .b-won{background:#EAF6E6;color:var(--green-dark)}
+  .b-lost{background:#fee7e7;color:#b91c1c}
+  .b-draft{background:#f3f4f6;color:#4b5563}
+  .b-sent{background:#e3f2fd;color:#0d47a1}
+  .b-accepted{background:#EAF6E6;color:var(--green-dark)}
+  .b-converted{background:#f3e8ff;color:#6b21a8}
+  .b-available{background:#EAF6E6;color:var(--green-dark)}
+  .b-allocated{background:#fff6e5;color:#b45309}
+  .b-sold{background:#f3f4f6;color:#4b5563}
+
+  /* ── DETAIL ── */
+  .card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:10px}
+  .card-label{font-size:9.5px;font-weight:800;color:var(--soft);text-transform:uppercase;letter-spacing:.7px}
+  .card-value{font-size:16px;font-weight:700;margin-top:3px;letter-spacing:-.3px}
+  .kv{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mid);padding:4px 0}
+  .kv.total{font-size:15px;font-weight:800;color:var(--ink);border-top:1px solid var(--line);margin-top:6px;padding-top:9px}
+  .kv .neg{color:#b91c1c}
+  .note{background:#fff;border:1px solid var(--line);border-left:3px solid var(--green);border-radius:9px;padding:10px 11px;margin-bottom:8px}
+  .note .txt{font-size:12.5px;line-height:1.55;color:#333}
+  .note .by{font-size:10.5px;color:var(--soft);margin-top:5px}
+  .banner{border-radius:10px;padding:10px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px;line-height:1.5}
+  .banner.green{background:#EEF8EA;border:1px solid #C5E5B9;color:#2F6B22}
+  .banner.amber{background:#fff7e8;border:1px solid #f6dfae;color:#92400e}
+
+  /* ── FORMS ── */
+  .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+  .fg label{font-size:11.5px;font-weight:700;color:var(--mid)}
+  .fg label .opt{font-weight:500;color:#b5b5b5}
+  .inp{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 11px;font-size:13.5px;font-family:inherit;color:var(--ink);width:100%}
+  .inp:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(27,26,78,.10)}
+  select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23999'/></svg>");
+             background-repeat:no-repeat;background-position:right 12px center}
+  textarea.inp{resize:none;line-height:1.5}
+  .inp.err{border-color:#e11d48;background:#fff5f6}
+  .errmsg{font-size:11px;color:#e11d48;font-weight:600}
+  .fg-row{display:flex;gap:9px}
+  .fg-row>*{flex:1}
+  .seg{display:flex;gap:5px}
+  .seg button{flex:1;padding:8px 4px;border:1px solid var(--line);background:#fff;border-radius:9px;font-size:11.5px;font-weight:700;color:var(--mid);
+              cursor:pointer;font-family:inherit}
+  .seg button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .check{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px;font-size:13px;
+         font-weight:600;cursor:pointer;margin-bottom:12px}
+  .box{width:20px;height:20px;border-radius:6px;border:1.5px solid #d4d4d4;display:flex;align-items:center;justify-content:center;font-size:12px;
+       color:#fff;flex-shrink:0;transition:.12s}
+  .box.on{background:var(--green);border-color:var(--green)}
+  .calcbox{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+
+  /* ── BUTTONS ── */
+  .footerbar{padding:10px 12px;background:#fff;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0}
+  .btn{flex:1;padding:13px 12px;border:none;border-radius:12px;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;
+       text-align:center;transition:.12s;letter-spacing:-.1px}
+  .btn:active{transform:scale(.98);filter:brightness(.93)}
+  .btn.navy{background:var(--navy)} .btn.green{background:var(--green)} .btn.blue{background:var(--blue)}
+  .btn.purple{background:var(--purple)} .btn.amber{background:var(--amber)} .btn.dark{background:#3a3a3a}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--mid)}
+  .btn.full{width:100%}
+
+  /* ── SHEET / MODAL / TOAST ── */
+  .overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end;animation:fade .18s ease}
+  .overlay.center{align-items:center;justify-content:center;padding:22px}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .sheet{background:#fff;width:100%;border-radius:22px 22px 0 0;padding:12px 14px 16px;animation:up .22s cubic-bezier(.2,.9,.3,1)}
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .grab{width:36px;height:4px;background:#e2e2e2;border-radius:3px;margin:0 auto 14px}
+  .sheet h3{font-size:16px;font-weight:800;text-align:center;margin-bottom:14px;letter-spacing:-.3px}
+  .sheet-btn{width:100%;padding:14px;border:none;border-radius:13px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+             text-align:left;margin-bottom:8px;position:relative;display:flex;align-items:center;gap:10px}
+  .dialog{background:#fff;border-radius:18px;width:100%;overflow:hidden;animation:pop .2s cubic-bezier(.2,.9,.3,1)}
+  @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .dialog-body{padding:20px 18px 16px;text-align:center}
+  .dialog .dico{font-size:36px;margin-bottom:10px}
+  .dialog h3{font-size:16px;font-weight:800;margin-bottom:6px}
+  .dialog p{font-size:12.5px;color:var(--mid);line-height:1.6}
+  .dialog-foot{display:flex;gap:8px;padding:0 14px 14px}
+  .toast{position:absolute;left:14px;right:14px;bottom:88px;background:#1f1f22;color:#fff;border-radius:13px;padding:12px 14px;font-size:12.5px;
+         font-weight:600;z-index:70;display:flex;align-items:center;gap:9px;box-shadow:0 10px 26px rgba(0,0,0,.35);animation:up .2s ease;line-height:1.4}
+  .toast.good{background:#0f6b56} .toast.warn{background:#7c2d12}
+
+  .starrow{display:flex;gap:5px}
+  .star{flex:1;padding:8px 2px;border:1px solid var(--line);background:#fff;border-radius:9px;font-size:12px;cursor:pointer;font-family:inherit;color:#c9c9c9}
+  .star.on{background:#fff8e6;border-color:#f0c04a;color:#e08c00;font-weight:700}
+  .agebar{width:3px;border-radius:2px;align-self:stretch;flex-shrink:0}
+  .stockrow{display:flex;gap:10px}
+
+  .listinfo{font-size:11px;color:var(--soft);padding:0 12px 8px;font-weight:600}
+  .acc-item{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:8px;
+            font-size:13.5px;font-weight:600;cursor:pointer}
+  .acc-item .ai{font-size:17px;width:24px;text-align:center}
+  .acc-item .av{margin-left:auto;font-size:12px;color:var(--soft);font-weight:600}
+  .switch{margin-left:auto;width:42px;height:25px;background:#e2e2e4;border-radius:13px;position:relative;transition:.16s;flex-shrink:0}
+  .switch.on{background:var(--green)}
+  .switch::after{content:"";position:absolute;top:2.5px;left:2.5px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.16s;
+                 box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .switch.on::after{transform:translateX(17px)}
+
+  @media (max-width:520px) and (pointer:coarse){
+    body{display:block;background:#fff;background-image:none}
+    .phone{width:100vw;height:100vh;height:100dvh;flex:none;border-radius:0;padding:0;
+           box-shadow:none;background:none;zoom:1 !important}
+    .phone::before,.phone::after{display:none}
+    .screen{border-radius:0}
+    .island,.statusbar,.homebar{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen">
+    <div class="island"></div>
+    <div class="statusbar" id="statusbar">
+      <span>9:41</span>
+      <span class="sp"></span>
+      <span class="icons">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7.5" width="3" height="3.5" rx="1"/><rect x="4.5" y="5.5" width="3" height="5.5" rx="1"/><rect x="9" y="3" width="3" height="8" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1 4.2a10 10 0 0114 0"/><path d="M3.6 6.9a6.3 6.3 0 018.8 0"/><circle cx="8" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".7" y=".7" width="21" height="10.6" rx="3" stroke="currentColor" stroke-opacity=".4" stroke-width="1.1"/><rect x="2.3" y="2.3" width="16" height="7.4" rx="1.8" fill="currentColor"/><path d="M23.4 4.1v3.8a2 2 0 000-3.8z" fill="currentColor" fill-opacity=".4"/></svg>
+      </span>
+    </div>
+    <div class="app" id="app"></div>
+    <div class="homebar"><i></i></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════ DATA ═══════════════ */
+const today = new Date(2026,5,25); // 25 Jun 2026
+const ME = { name:'Joseph', full:'Joseph Barrett', role:'Sales Manager', depot:'Depot 1 — Head Office', phone:'07700 900112' };
+
+function seedData(){ return {
+  quotes:[
+    { id:164, customer:'N M & C Adams', model:'EG200 Plough', brand:'Merlo', spec:'EG200 5-furrow reversible plough. Includes depth wheel and 2-year warranty.',
+      price:33000, qty:1, tradeIn:0, vat:true, status:'Sent', rep:'Joseph Barrett', date:'18/06/26', stockRef:'WG-10133' },
+    { id:163, customer:'Thomas Trump', model:'F391 Trimax Mower', brand:'Trimax', spec:'3.9m roller mower, front & rear rollers, full service pack.',
+      price:18500, qty:1, tradeIn:4200, vat:true, status:'Draft', rep:'S. Barclay', date:'16/06/26', stockRef:'' },
+    { id:162, customer:'Glenmore Estates', model:'Kubota M5-112', brand:'Kubota', spec:'112hp cab tractor, loader ready, 4 spool valves.',
+      price:64000, qty:1, tradeIn:21000, vat:true, status:'Accepted', rep:'Joseph Barrett', date:'11/06/26', stockRef:'WG-10188' },
+    { id:161, customer:'Barry Dolan Agri', model:'MISC TT2023 Tipping Trailer', brand:'Misc', spec:'14ft tipping trailer, hydraulic tailgate.',
+      price:4000, qty:2, tradeIn:0, vat:true, status:'Converted', rep:'A. Pritchard', date:'04/06/26', stockRef:'WG-10021' }
+  ],
+  orders:[
+    { id:'SO-0418', quoteId:161, customer:'Barry Dolan Agri', equipment:'MISC TT2023 Tipping Trailer', stockRef:'WG-10021',
+      warranty:'12 months', total:9600, deposit:true, date:'05/06/26', rep:'A. Pritchard', status:'Confirmed' }
+  ],
+  leads:[
+    { id:1, name:'Matt Osbourne', phone:'07872 074544', machine:'Kubota ZD 1211', status:'In Progress', priority:4, followUp:'07/07/2026',
+      rep:'S. Barclay', notes:[{t:'Visited showroom, interested in ZD 1211 zero-turn. Wants finance options priced.', d:'23/06/26', by:'S. Barclay'},
+                               {t:'Called — asked for a demo before end of July.', d:'19/06/26', by:'S. Barclay'}] },
+    { id:2, name:'2 Sisters Red Meat', phone:'07700 900443', machine:'Merlo Telehandler 27.6', status:'Contacted', priority:3, followUp:'02/07/2026',
+      rep:'A. Pritchard', notes:[{t:'Initial call. Replacing an ageing JCB, budget circa £70k.', d:'20/06/26', by:'A. Pritchard'}] },
+    { id:3, name:'Ellis Farm Partnership', phone:'07700 900781', machine:'Kubota M5-112', status:'New', priority:2, followUp:'29/06/2026',
+      rep:'Joseph Barrett', notes:[{t:'Enquiry from the website. Not yet contacted.', d:'24/06/26', by:'System'}] },
+    { id:4, name:'Hilltop Contracts', phone:'07700 900129', machine:'Trimax F391', status:'Closed/Won', priority:3, followUp:'',
+      rep:'Joseph Barrett', notes:[{t:'Deal closed, order raised.', d:'09/06/26', by:'Joseph Barrett'}] }
+  ],
+  visits:[
+    { id:1, customer:'Thomas Trump', purpose:'Site visit re: F391 Trimax. Walked the ground, discussed spec and pricing. Needs a wider deck than current unit.',
+      revisit:'07/07/2026', date:'20/06/26', rep:'S. Barclay' },
+    { id:2, customer:'Matt Osbourne', purpose:'ZD 1211 interest confirmed. Measured access to the yard — delivery lorry will fit. Follow up with finance quote.',
+      revisit:'30/06/2026', date:'16/06/26', rep:'S. Barclay' },
+    { id:3, customer:'Glenmore Estates', purpose:'Handover of M5-112 and walkaround with the two operators. All good, no issues raised.',
+      revisit:'', date:'12/06/26', rep:'Joseph Barrett' }
+  ],
+  stock:[
+    { id:'WG-10133', model:'EG200 Plough', brand:'Merlo', cond:'New', cat:'Cultivation', depot:'Depot 3', price:33000, age:2, status:'Available' },
+    { id:'WG-10188', model:'Kubota M5-112', brand:'Kubota', cond:'New', cat:'Tractor', depot:'Depot 1', price:64000, age:1, status:'Available' },
+    { id:'WG-10044', model:'Kubota CAMO RTV', brand:'Kubota', cond:'Used', cat:'ATV / ROPS', depot:'Depot 3', price:14000, age:2, status:'Available' },
+    { id:'WG-10021', model:'MISC TT2023 Tipping Trailer', brand:'Misc', cond:'Used', cat:'Trailer', depot:'Depot 1', price:4000, age:9, status:'Allocated' },
+    { id:'WG-09877', model:'Trimax F391 Mower', brand:'Trimax', cond:'Used', cat:'Mower', depot:'Depot 2', price:16800, age:14, status:'Available' },
+    { id:'WG-09812', model:'Merlo Telehandler 27.6', brand:'Merlo', cond:'Used', cat:'Telehandler', depot:'Depot 2', price:68500, age:5, status:'Available' }
+  ],
+  seq:{ quote:165, lead:5, visit:4, order:419 },
+  settings:{ notifications:true, offline:true }
+};}
+
+let db, S = { screen:'home', stack:[], params:{}, q:'', filter:'All', filter2:'All', form:{}, sheet:false, dialog:null, toast:null };
+
+function save(){ try{ localStorage.setItem('jbbarrett-demo', JSON.stringify(db)); }catch(e){} }
+function load(){ try{ const r = localStorage.getItem('jbbarrett-demo'); if(r) return JSON.parse(r); }catch(e){} return null; }
+db = load() || seedData();
+
+function resetDemo(){ db = seedData(); save(); S = {screen:'home',stack:[],params:{},q:'',filter:'All',filter2:'All',form:{},sheet:false,dialog:null,toast:null}; render(); toast('Demo data reset','good'); }
+
+/* ═══════════════ HELPERS ═══════════════ */
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '£' + Math.round(n||0).toLocaleString('en-GB');
+const BADGE_CLS = {'New':'b-new','Contacted':'b-contacted','In Progress':'b-progress','On Hold':'b-hold','Closed/Won':'b-won','Lost Sale':'b-lost',
+  'Draft':'b-draft','Sent':'b-sent','Accepted':'b-accepted','Converted':'b-converted','Confirmed':'b-accepted',
+  'Available':'b-available','Allocated':'b-allocated','Sold':'b-sold'};
+const badge = s => '<span class="bdg '+(BADGE_CLS[s]||'b-hold')+'">'+esc(s)+'</span>';
+const pill = (txt,cls) => '<span class="bdg '+cls+'">'+esc(txt)+'</span>';
+const stars = n => '★'.repeat(n)+'☆'.repeat(4-n);
+function dstr(d){ return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(2); }
+function parseDate(s){ const m=/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/.exec((s||'').trim()); if(!m) return null;
+  let y=+m[3]; if(y<100) y+=2000; return new Date(y,+m[2]-1,+m[1]); }
+function daysAway(s){ const d=parseDate(s); if(!d) return null; return Math.round((d-today)/86400000); }
+function quoteTotal(q){ const net = (q.price||0)*(q.qty||1) - (q.tradeIn||0); const vat = q.vat ? net*0.2 : 0; return {net, vat, gross:net+vat}; }
+function ageColor(m){ return m<=3 ? '#43a047' : m<=8 ? '#fb8c00' : '#e53935'; }
+
+function failValidation(f, err){ f._err = err; render();
+  const b = document.querySelector('.body'); if(b) b.scrollTop = 0;
+  toast('Check the highlighted fields','warn'); }
+function toast(msg, kind){ S.toast = {msg, kind:kind||''}; render(); clearTimeout(window._tt); window._tt = setTimeout(()=>{ S.toast=null; render(); }, 2600); }
+
+function go(screen, params){ S.stack.push({screen:S.screen, params:S.params, q:S.q, filter:S.filter, filter2:S.filter2});
+  S.screen = screen; S.params = params||{}; S.q=''; S.filter='All'; S.filter2='All'; S.sheet=false; S.dialog=null;
+  const b=document.querySelector('.body'); if(b) b.scrollTop=0; render(); }
+function back(){ const p = S.stack.pop(); if(!p){ S.screen='home'; S.params={}; } else { S.screen=p.screen; S.params=p.params; S.q=p.q; S.filter=p.filter; S.filter2=p.filter2; }
+  S.sheet=false; S.dialog=null; render(); }
+function jump(screen, params){ S.stack=[]; S.screen=screen; S.params=params||{}; S.q=''; S.filter='All'; S.filter2='All'; S.sheet=false; S.dialog=null; render(); }
+
+function setQ(v){ S.q=v; renderBodyOnly(); }
+function setFilter(v){ S.filter=v; render(); }
+function setFilter2(v){ S.filter2=v; render(); }
+function fset(k,v){ S.form[k]=v; if(S.form._err) delete S.form._err[k]; }
+function ftoggle(k){ S.form[k]=!S.form[k]; render(); }
+function fsetR(k,v){ S.form[k]=v; render(); }
+
+function dueBits(){
+  const items=[];
+  db.leads.forEach(l=>{ const d=daysAway(l.followUp); if(d!==null && d<=10 && l.status!=='Closed/Won' && l.status!=='Lost Sale')
+    items.push({kind:'lead', id:l.id, who:l.name, what:'Follow-up call', when:l.followUp, days:d}); });
+  db.visits.forEach(v=>{ const d=daysAway(v.revisit); if(d!==null && d<=10)
+    items.push({kind:'visit', id:v.id, who:v.customer, what:'Revisit due', when:v.revisit, days:d}); });
+  return items.sort((a,b)=>a.days-b.days);
+}
+
+/* ═══════════════ CHROME ═══════════════ */
+function logoMark(cls){ return '<div class="logo '+(cls||'')+'"><div class="l1">J.B.BARRETT</div><div class="lbar"></div><div class="l2">TRACTORS</div></div>'; }
+function tabbar(active){
+  return '<div class="tabbar">'
+    + '<div class="tabitem '+(active==='home'?'on':'')+'" onclick="jump(\'home\')">🏠<span>Home</span></div>'
+    + '<div class="fab" onclick="openSheet()">+</div>'
+    + '<div class="tabitem '+(active==='account'?'on':'')+'" onclick="jump(\'account\')">👤<span>Account</span></div>'
+    + '</div>';
+}
+function navbar(title, sub, action){
+  return '<div class="navbar"><span class="back" onclick="back()">←</span>'
+    + '<div><div class="navtitle">'+esc(title)+'</div>'+(sub?'<div class="navsub">'+esc(sub)+'</div>':'')+'</div>'
+    + (action||'') + '</div>';
+}
+function search(ph){ return '<div class="searchrow"><input class="srch" id="srch" placeholder="'+esc(ph)+'" value="'+esc(S.q)+'" oninput="setQ(this.value)"></div>'; }
+function chips(list, cur, fn){ return '<div class="chips">'+list.map(c=>'<button class="chip '+(c===cur?'on':'')+'" onclick="'+fn+'(\''+c+'\')">'+esc(c)+'</button>').join('')+'</div>'; }
+function empty(icon, msg){ return '<div class="empty"><div class="e">'+icon+'</div><div class="m">'+esc(msg)+'</div></div>'; }
+
+function openSheet(){ S.sheet = true; render(); }
+function closeSheet(){ S.sheet = false; render(); }
+
+function sheetHTML(){
+  if(!S.sheet) return '';
+  return '<div class="overlay" onclick="closeSheet()"><div class="sheet" onclick="event.stopPropagation()">'
+    + '<div class="grab"></div><h3>Create New</h3>'
+    + '<button class="sheet-btn" style="background:var(--navy)" onclick="newQuote()">📄 Quote</button>'
+    + '<button class="sheet-btn" style="background:var(--blue)" onclick="newOrder()">🛒 Sales Order</button>'
+    + '<button class="sheet-btn" style="background:var(--green)" onclick="newLead()">👥 Sales Lead</button>'
+    + '<button class="sheet-btn" style="background:var(--purple)" onclick="newVisit()">📍 Site Visit</button>'
+    + '</div></div>';
+}
+function dialogHTML(){
+  if(!S.dialog) return '';
+  const d = S.dialog;
+  return '<div class="overlay center" onclick="S.dialog=null;render()"><div class="dialog" onclick="event.stopPropagation()">'
+    + '<div class="dialog-body"><div class="dico">'+d.icon+'</div><h3>'+esc(d.title)+'</h3><p>'+d.body+'</p></div>'
+    + '<div class="dialog-foot">'
+    + (d.cancel!==false?'<button class="btn ghost" onclick="S.dialog=null;render()">'+esc(d.cancelText||'Cancel')+'</button>':'')
+    + '<button class="btn '+(d.colour||'navy')+'" onclick="'+d.action+'">'+esc(d.ok)+'</button></div></div></div>';
+}
+function toastHTML(){ return S.toast ? '<div class="toast '+S.toast.kind+'"><span>'+(S.toast.kind==='good'?'✅':S.toast.kind==='warn'?'⚠️':'ℹ️')+'</span><span>'+esc(S.toast.msg)+'</span></div>' : ''; }
+
+/* ═══════════════ HOME ═══════════════ */
+function scr_home(){
+  const openQuotes = db.quotes.filter(q=>q.status!=='Converted').length;
+  const pipeline = db.quotes.filter(q=>q.status!=='Converted').reduce((s,q)=>s+quoteTotal(q).gross,0);
+  const activeLeads = db.leads.filter(l=>l.status!=='Closed/Won'&&l.status!=='Lost Sale').length;
+  const due = dueBits();
+  const hero = '<div class="hero" style="position:relative">'
+    + '<div class="hero-top">' + logoMark('rev')
+    + '<div class="bell" onclick="go(\'notifications\')">🔔'+(due.length?'<span class="dot">'+due.length+'</span>':'')+'</div></div>'
+    + '<div class="greet">Good afternoon</div><div class="who">'+esc(ME.name)+'</div>'
+    + '<div class="weather"><div style="font-size:15px">⛅</div>27° Cloudy</div></div>';
+
+  const stats = '<div class="stats">'
+    + '<div class="stat" onclick="go(\'quotes\')"><div class="n">'+openQuotes+'</div><div class="l">Open quotes</div></div>'
+    + '<div class="stat" onclick="go(\'quotes\')"><div class="n" style="font-size:15px;padding-top:4px">'+money(pipeline)+'</div><div class="l">Pipeline</div></div>'
+    + '<div class="stat" onclick="go(\'notifications\')"><div class="n" style="color:'+(due.length?'var(--amber)':'var(--ink)')+'">'+due.length+'</div><div class="l">Due soon</div></div>'
+    + '</div>';
+
+  const t = (scr,ico,bg,title,sub,count) =>
+    '<div class="tile" onclick="'+scr+'"><div class="ic" style="background:'+bg+'">'+ico+'</div>'
+    + '<div class="t">'+title+'</div><div class="s">'+sub+'</div>'
+    + (count!=null?'<div class="tile-count">'+count+'</div>':'') + '</div>';
+
+  const tiles = '<div class="tiles">'
+    + t("go('quotes')",'📄','#EDEDF7','Quotes','View &amp; create', db.quotes.length)
+    + t("go('stock')",'📦','#EEF2FF','Stock','Browse inventory', null)
+    + t("go('leads')",'👥','#EAF6E6','Sales Leads', activeLeads+' active', null)
+    + t("go('visits')",'📍','#F5F3FF','Site Visits','Log &amp; revisit', null)
+    + t("go('orders')",'🛒','#EFF6FF','Sales Orders', db.orders.length+' confirmed', null)
+    + t("toast('Parts &amp; Service request form — not in this demo')",'🔧','#FEF9C3','Parts &amp; Service','Request forms', null)
+    + '</div>';
+
+  let dueCard = '';
+  if(due.length){
+    const d = due[0];
+    dueCard = '<div class="pad" style="padding-top:0"><div class="card" style="border-left:3px solid var(--amber);cursor:pointer" onclick="go(\'notifications\')">'
+      + '<div class="card-label">Next up</div>'
+      + '<div style="font-size:14px;font-weight:700;margin-top:4px">'+esc(d.who)+'</div>'
+      + '<div style="font-size:12px;color:var(--soft);margin-top:2px">'+esc(d.what)+' · '+esc(d.when)
+      + (d.days<0?' · <b style="color:#b91c1c">overdue</b>':d.days===0?' · <b style="color:var(--amber)">today</b>':' · in '+d.days+' days')+'</div>'
+      + '</div></div>';
+  }
+  return { navy:true, html:hero + '<div class="body">'+stats+tiles+dueCard+'</div>' + tabbar('home') };
+}
+
+/* ═══════════════ NOTIFICATIONS ═══════════════ */
+function scr_notifications(){
+  const due = dueBits();
+  const rows = due.length ? due.map(d=>{
+    const late = d.days<0, now = d.days===0;
+    return '<div class="row" onclick="'+(d.kind==='lead'?"go('lead',{id:"+d.id+"})":"go('visit',{id:"+d.id+"})")+'">'
+      + '<div class="row-head"><div><div class="row-title">'+esc(d.who)+'</div>'
+      + '<div class="row-meta">'+(d.kind==='lead'?'👥':'📍')+' '+esc(d.what)+' · '+esc(d.when)+'</div></div>'
+      + pill(late?'Overdue':now?'Today':'in '+d.days+'d', late?'b-lost':now?'b-progress':'b-contacted')
+      + '</div></div>';
+  }).join('') : empty('🔔','Nothing due in the next 10 days. Nice.');
+  return { html: navbar('Notifications', due.length+' follow-ups due') + '<div class="body"><div class="pad">'+rows+'</div></div>' + tabbar() };
+}
+
+/* ═══════════════ QUOTES ═══════════════ */
+function scr_quotes(){
+  const q = S.q.toLowerCase();
+  let list = db.quotes.filter(x => (x.customer+' '+x.model+' '+x.brand+' '+x.id).toLowerCase().includes(q));
+  if(S.filter!=='All') list = list.filter(x=>x.status===S.filter);
+  const rows = list.length ? list.map(x=>{
+    const tot = quoteTotal(x);
+    return '<div class="row" onclick="go(\'quote\',{id:'+x.id+'})">'
+      + '<div class="row-head"><div><div class="row-title">'+esc(x.customer)+'</div>'
+      + '<div class="row-meta">#'+x.id+' · '+esc(x.model)+'<br>'+money(tot.gross)+' · '+esc(x.rep)+' · '+esc(x.date)+'</div></div>'+badge(x.status)+'</div>'
+      + '<div class="row-actions">'
+      + '<button class="abtn" style="background:var(--green)" onclick="event.stopPropagation();go(\'quote\',{id:'+x.id+'})">View</button>'
+      + '<button class="abtn" style="background:var(--blue)" onclick="event.stopPropagation();editQuote('+x.id+')">Edit</button>'
+      + (x.status==='Converted'
+          ? '<button class="abtn ghost" style="flex:2" onclick="event.stopPropagation();toast(\'Already converted to a sales order\')">✓ Converted</button>'
+          : '<button class="abtn" style="background:var(--navy);flex:2" onclick="event.stopPropagation();convertQuote('+x.id+')">🛒 Convert</button>')
+      + '</div></div>';
+  }).join('') : empty('📄','No quotes match. Try clearing the search or filter.');
+  return { html: navbar('Quotes', db.quotes.length+' total')
+    + search('Search customer, model or #')
+    + chips(['All','Draft','Sent','Accepted','Converted'], S.filter, 'setFilter')
+    + '<div class="body"><div class="pad" style="padding-top:0">'+rows+'</div></div>'
+    + '<div class="footerbar"><button class="btn navy" onclick="newQuote()">+ Create Quote</button></div>' + tabbar() };
+}
+
+function scr_quote(){
+  const x = db.quotes.find(q=>q.id===S.params.id);
+  if(!x) return { html: navbar('Quote') + empty('❓','Quote not found.') + tabbar() };
+  const t = quoteTotal(x);
+  const stock = db.stock.find(s=>s.id===x.stockRef);
+  const body = '<div class="pad">'
+    + (x.status==='Converted' ? '<div class="banner green">✅ Converted to sales order · see Sales Orders</div>' : '')
+    + '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start">'
+    + '<div><div class="card-label">Customer</div><div class="card-value">'+esc(x.customer)+'</div></div>'+badge(x.status)+'</div>'
+    + '<div style="font-size:11.5px;color:var(--soft);margin-top:7px">Quote #'+x.id+' · raised '+esc(x.date)+' · '+esc(x.rep)+'</div></div>'
+    + '<div class="card"><div class="card-label">Equipment</div><div class="card-value">'+esc(x.model)+'</div>'
+    + '<div style="font-size:11.5px;color:var(--soft);margin-top:3px">Qty '+x.qty+' · '+esc(x.brand)+(x.stockRef?' · Stock '+esc(x.stockRef)+(stock?' ('+stock.status+')':''):' · No stock allocated')+'</div>'
+    + (x.spec?'<div style="font-size:12.5px;color:#444;line-height:1.55;margin-top:8px;border-top:1px solid var(--line);padding-top:8px">'+esc(x.spec)+'</div>':'')+'</div>'
+    + '<div class="card"><div class="card-label">Price breakdown</div>'
+    + '<div class="kv"><span>Unit price × '+x.qty+'</span><span>'+money(x.price*x.qty)+'</span></div>'
+    + (x.tradeIn?'<div class="kv"><span>Trade-in allowance</span><span class="neg">− '+money(x.tradeIn)+'</span></div>':'')
+    + '<div class="kv"><span>Net</span><span>'+money(t.net)+'</span></div>'
+    + '<div class="kv"><span>VAT '+(x.vat?'(20%)':'— not applied')+'</span><span>'+money(t.vat)+'</span></div>'
+    + '<div class="kv total"><span>Total (GBP)</span><span>'+money(t.gross)+'</span></div></div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:10px">'
+    + '<button class="btn blue" onclick="editQuote('+x.id+')">✏️ Edit</button>'
+    + '<button class="btn ghost" onclick="duplicateQuote('+x.id+')">⧉ Duplicate</button></div>'
+    + '<button class="btn dark full" style="margin-bottom:10px" onclick="emailQuote('+x.id+')">📧 Email quote to customer</button>'
+    + '</div>';
+  const foot = x.status==='Converted' ? '' :
+    '<div class="footerbar"><button class="btn navy" onclick="convertQuote('+x.id+')">🛒 Convert to Sales Order</button></div>';
+  return { html: navbar('Quote #'+x.id, x.model) + '<div class="body">'+body+'</div>' + foot + tabbar() };
+}
+
+/* ── quote form ── */
+function newQuote(pre){ S.form = Object.assign({ id:null, customer:'', model:'', brand:'', spec:'', price:'', qty:'1', tradeIn:'', vat:true, stockRef:'' }, pre||{});
+  S.sheet=false; go('quote-form'); }
+function editQuote(id){ const x = db.quotes.find(q=>q.id===id);
+  S.form = { id:x.id, customer:x.customer, model:x.model, brand:x.brand, spec:x.spec, price:String(x.price), qty:String(x.qty),
+             tradeIn:x.tradeIn?String(x.tradeIn):'', vat:x.vat, stockRef:x.stockRef }; go('quote-form'); }
+function duplicateQuote(id){ const x = db.quotes.find(q=>q.id===id);
+  S.form = { id:null, customer:x.customer, model:x.model, brand:x.brand, spec:x.spec, price:String(x.price), qty:String(x.qty),
+             tradeIn:x.tradeIn?String(x.tradeIn):'', vat:x.vat, stockRef:x.stockRef }; go('quote-form'); toast('Copied — save to create a new quote'); }
+
+function scr_quote_form(){
+  const f = S.form, e = f._err || {};
+  const price = parseFloat(f.price)||0, qty = parseInt(f.qty)||1, tin = parseFloat(f.tradeIn)||0;
+  const net = price*qty - tin, vat = f.vat ? net*0.2 : 0;
+  const stockOpts = ['<option value="">— none —</option>'].concat(db.stock.filter(s=>s.status!=='Sold').map(s=>
+    '<option value="'+s.id+'"'+(f.stockRef===s.id?' selected':'')+'>'+esc(s.id+' · '+s.model)+'</option>')).join('');
+  const body = '<div class="pad">'
+    + '<div class="fg"><label>Customer name</label><input class="inp '+(e.customer?'err':'')+'" value="'+esc(f.customer)+'" placeholder="Search or type new name…" oninput="fset(\'customer\',this.value)">'
+    + (e.customer?'<div class="errmsg">'+e.customer+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Model / headline</label><input class="inp '+(e.model?'err':'')+'" value="'+esc(f.model)+'" placeholder="e.g. Merlo Telehandler 27.6" oninput="fset(\'model\',this.value)">'
+    + (e.model?'<div class="errmsg">'+e.model+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Brand</label><input class="inp" value="'+esc(f.brand)+'" placeholder="e.g. Merlo" oninput="fset(\'brand\',this.value)"></div>'
+    + '<div class="fg"><label>Pull from stock <span class="opt">optional</span></label><select class="inp" onchange="pickStock(this.value)">'+stockOpts+'</select></div>'
+    + '<div class="fg"><label>Spec &amp; notes</label><textarea class="inp" style="height:76px" placeholder="Spec, warranty, delivery…" oninput="fset(\'spec\',this.value)">'+esc(f.spec)+'</textarea></div>'
+    + '<div class="fg-row"><div class="fg" style="flex:2"><label>Unit price (£)</label><input class="inp '+(e.price?'err':'')+'" inputmode="decimal" value="'+esc(f.price)+'" placeholder="33000" oninput="fsetLive(\'price\',this.value)">'
+    + (e.price?'<div class="errmsg">'+e.price+'</div>':'')+'</div>'
+    + '<div class="fg" style="flex:1"><label>Qty</label><input class="inp" inputmode="numeric" value="'+esc(f.qty)+'" oninput="fsetLive(\'qty\',this.value)"></div></div>'
+    + '<div class="fg"><label>Trade-in value (£) <span class="opt">optional</span></label><input class="inp" inputmode="decimal" value="'+esc(f.tradeIn)+'" placeholder="e.g. 18000" oninput="fsetLive(\'tradeIn\',this.value)"></div>'
+    + '<div class="check" onclick="ftoggle(\'vat\')"><div class="box '+(f.vat?'on':'')+'">'+(f.vat?'✓':'')+'</div>Apply VAT at 20%</div>'
+    + (tin>0 ? '<div class="banner amber">Trade-in entered — check whether VAT applies to the full price or the net difference before sending.</div>':'')
+    + '<div class="calcbox"><div class="card-label">Live total</div>'
+    + '<div class="kv"><span>'+money(price)+' × '+qty+'</span><span>'+money(price*qty)+'</span></div>'
+    + (tin?'<div class="kv"><span>Trade-in</span><span class="neg">− '+money(tin)+'</span></div>':'')
+    + '<div class="kv"><span>VAT</span><span>'+money(vat)+'</span></div>'
+    + '<div class="kv total"><span>Total</span><span>'+money(net+vat)+'</span></div></div>'
+    + '</div>';
+  return { html: navbar(f.id?'Edit Quote #'+f.id:'New Quote', f.id?'':'Draft')
+    + '<div class="body">'+body+'</div>'
+    + '<div class="footerbar"><button class="btn ghost" onclick="back()">Cancel</button>'
+    + '<button class="btn navy" style="flex:2" onclick="saveQuote()">💾 '+(f.id?'Save changes':'Save quote')+'</button></div>' };
+}
+function fsetLive(k,v){ S.form[k]=v; const b=document.querySelector('.body'); const sc=b?b.scrollTop:0; renderBodyOnly(sc, true); }
+function pickStock(id){ const s = db.stock.find(x=>x.id===id);
+  S.form.stockRef = id;
+  if(s){ S.form.model=s.model; S.form.brand=s.brand; S.form.price=String(s.price); }
+  render(); if(s) toast('Pulled '+s.model+' from stock'); }
+
+function saveQuote(){
+  const f = S.form, err = {};
+  if(!f.customer.trim()) err.customer='Customer name is required';
+  if(!f.model.trim()) err.model='Tell us what you are quoting';
+  if(!(parseFloat(f.price)>0)) err.price='Enter a price';
+  if(Object.keys(err).length){ failValidation(f, err); return; }
+  const rec = { customer:f.customer.trim(), model:f.model.trim(), brand:f.brand.trim()||'—', spec:f.spec.trim(),
+    price:parseFloat(f.price), qty:parseInt(f.qty)||1, tradeIn:parseFloat(f.tradeIn)||0, vat:!!f.vat, stockRef:f.stockRef||'' };
+  let id;
+  if(f.id){ const x = db.quotes.find(q=>q.id===f.id); Object.assign(x, rec); id=x.id; }
+  else { id = db.seq.quote++; db.quotes.unshift(Object.assign({ id, status:'Draft', rep:ME.full, date:dstr(today) }, rec)); }
+  save(); S.stack = S.stack.filter(s=>s.screen!=='quote-form'); jump('quote',{id});
+  toast(f.id?'Quote #'+id+' updated':'Quote #'+id+' created','good');
+}
+
+/* ═══════════════ SALES ORDERS ═══════════════ */
+function convertQuote(id){
+  const x = db.quotes.find(q=>q.id===id); const t = quoteTotal(x);
+  S.dialog = { icon:'🛒', title:'Convert to Sales Order?', colour:'navy', ok:'Continue',
+    body:'<b>'+esc(x.customer)+'</b><br>'+esc(x.model)+' · '+money(t.gross)+'<br><br>The quote will be locked as <b>Converted</b> once the order is confirmed.',
+    action:'doConvert('+id+')' };
+  render();
+}
+function doConvert(id){
+  const x = db.quotes.find(q=>q.id===id); const t = quoteTotal(x);
+  S.dialog=null;
+  S.form = { quoteId:x.id, customer:x.customer, equipment:x.model, stockRef:x.stockRef, warranty:'', total:String(Math.round(t.gross)), deposit:false, delivery:'' };
+  go('order-form');
+}
+function newOrder(){ S.form = { quoteId:null, customer:'', equipment:'', stockRef:'', warranty:'', total:'', deposit:false, delivery:'' }; S.sheet=false; go('order-form'); }
+
+function scr_order_form(){
+  const f = S.form, e = f._err||{};
+  const stockOpts = ['<option value="">— select stock —</option>'].concat(db.stock.filter(s=>s.status!=='Sold').map(s=>
+    '<option value="'+s.id+'"'+(f.stockRef===s.id?' selected':'')+'>'+esc(s.id+' · '+s.model+' · '+s.status)+'</option>')).join('');
+  const body = '<div class="pad">'
+    + (f.quoteId ? '<div class="banner green">Converting from Quote #'+f.quoteId+' · '+esc(f.customer)+' · '+esc(f.equipment)+'</div>' : '')
+    + '<div class="fg"><label>Customer</label><input class="inp '+(e.customer?'err':'')+'" value="'+esc(f.customer)+'" placeholder="Customer name" oninput="fset(\'customer\',this.value)">'
+    + (e.customer?'<div class="errmsg">'+e.customer+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Equipment</label><input class="inp '+(e.equipment?'err':'')+'" value="'+esc(f.equipment)+'" placeholder="Machine / model" oninput="fset(\'equipment\',this.value)">'
+    + (e.equipment?'<div class="errmsg">'+e.equipment+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Stock / wholegood reference</label><select class="inp" onchange="fsetR(\'stockRef\',this.value)">'+stockOpts+'</select>'
+    + (f.stockRef?'<div style="font-size:11px;color:var(--green-dark);font-weight:600">This machine will be marked Allocated on confirm</div>':'')+'</div>'
+    + '<div class="fg"><label>Warranty</label><input class="inp" value="'+esc(f.warranty)+'" placeholder="e.g. 24 months" oninput="fset(\'warranty\',this.value)"></div>'
+    + '<div class="fg"><label>Order total (£)</label><input class="inp '+(e.total?'err':'')+'" inputmode="decimal" value="'+esc(f.total)+'" oninput="fset(\'total\',this.value)">'
+    + (e.total?'<div class="errmsg">'+e.total+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Expected delivery <span class="opt">optional</span></label><input class="inp" value="'+esc(f.delivery)+'" placeholder="DD / MM / YYYY" oninput="fset(\'delivery\',this.value)"></div>'
+    + '<div class="check" onclick="ftoggle(\'deposit\')"><div class="box '+(f.deposit?'on':'')+'">'+(f.deposit?'✓':'')+'</div>Deposit received</div>'
+    + '</div>';
+  return { html: navbar('New Sales Order', f.quoteId?'From quote #'+f.quoteId:'Standalone')
+    + '<div class="body">'+body+'</div>'
+    + '<div class="footerbar"><button class="btn ghost" onclick="back()">Cancel</button>'
+    + '<button class="btn navy" style="flex:2" onclick="saveOrder()">✅ Confirm order</button></div>' };
+}
+function saveOrder(){
+  const f = S.form, err = {};
+  if(!f.customer.trim()) err.customer='Customer is required';
+  if(!f.equipment.trim()) err.equipment='Equipment is required';
+  if(!(parseFloat(f.total)>0)) err.total='Enter the order total';
+  if(Object.keys(err).length){ failValidation(f, err); return; }
+  const id = 'SO-0'+(db.seq.order++);
+  db.orders.unshift({ id, quoteId:f.quoteId, customer:f.customer.trim(), equipment:f.equipment.trim(), stockRef:f.stockRef,
+    warranty:f.warranty.trim()||'—', total:parseFloat(f.total), deposit:!!f.deposit, delivery:f.delivery.trim(),
+    date:dstr(today), rep:ME.full, status:'Confirmed' });
+  if(f.quoteId){ const q = db.quotes.find(x=>x.id===f.quoteId); if(q) q.status='Converted'; }
+  if(f.stockRef){ const s = db.stock.find(x=>x.id===f.stockRef); if(s) s.status='Allocated'; }
+  save(); S.stack = S.stack.filter(s=>s.screen!=='order-form'); jump('order',{id});
+  toast('Sales order '+id+' confirmed','good');
+}
+function scr_orders(){
+  const q = S.q.toLowerCase();
+  const list = db.orders.filter(o=>(o.customer+' '+o.equipment+' '+o.id).toLowerCase().includes(q));
+  const rows = list.length ? list.map(o=>
+    '<div class="row" onclick="go(\'order\',{id:\''+o.id+'\'})"><div class="row-head"><div>'
+    + '<div class="row-title">'+esc(o.customer)+'</div>'
+    + '<div class="row-meta">'+esc(o.id)+' · '+esc(o.equipment)+'<br>'+money(o.total)+' · '+esc(o.date)+(o.deposit?' · deposit paid':'')+'</div></div>'
+    + badge(o.status)+'</div></div>').join('') : empty('🛒','No sales orders yet. Convert a quote to raise one.');
+  return { html: navbar('Sales Orders', db.orders.length+' confirmed')
+    + search('Search customer or order no.')
+    + '<div class="body"><div class="pad">'+rows+'</div></div>'
+    + '<div class="footerbar"><button class="btn blue" onclick="newOrder()">+ New Sales Order</button></div>' + tabbar() };
+}
+function scr_order(){
+  const o = db.orders.find(x=>x.id===S.params.id);
+  if(!o) return { html: navbar('Order') + empty('❓','Order not found.') + tabbar() };
+  const body = '<div class="pad">'
+    + '<div class="banner green">✅ Order confirmed '+esc(o.date)+' by '+esc(o.rep)+'</div>'
+    + '<div class="card"><div class="card-label">Customer</div><div class="card-value">'+esc(o.customer)+'</div>'
+    + '<div style="font-size:11.5px;color:var(--soft);margin-top:4px">'+esc(o.id)+(o.quoteId?' · from quote #'+o.quoteId:'')+'</div></div>'
+    + '<div class="card"><div class="card-label">Equipment</div><div class="card-value">'+esc(o.equipment)+'</div>'
+    + '<div style="font-size:11.5px;color:var(--soft);margin-top:3px">Stock: '+esc(o.stockRef||'not allocated')+' · Warranty: '+esc(o.warranty)+'</div></div>'
+    + '<div class="card"><div class="kv"><span>Order total</span><span>'+money(o.total)+'</span></div>'
+    + '<div class="kv"><span>Deposit</span><span>'+(o.deposit?'Received':'Outstanding')+'</span></div>'
+    + '<div class="kv"><span>Expected delivery</span><span>'+esc(o.delivery||'TBC')+'</span></div></div>'
+    + (o.quoteId?'<button class="btn ghost full" style="margin-bottom:10px" onclick="go(\'quote\',{id:'+o.quoteId+'})">📄 View originating quote</button>':'')
+    + '<button class="btn dark full" onclick="toast(\'Order confirmation emailed\',\'good\')">📧 Email confirmation</button>'
+    + '</div>';
+  return { html: navbar(o.id, o.customer) + '<div class="body">'+body+'</div>' + tabbar() };
+}
+
+/* ═══════════════ LEADS ═══════════════ */
+const LEAD_STATUSES = ['New','Contacted','In Progress','On Hold','Closed/Won','Lost Sale'];
+function scr_leads(){
+  const q = S.q.toLowerCase();
+  let list = db.leads.filter(l=>(l.name+' '+l.machine+' '+l.rep).toLowerCase().includes(q));
+  if(S.filter!=='All') list = list.filter(l=>l.status===S.filter);
+  list = list.slice().sort((a,b)=>b.priority-a.priority);
+  const rows = list.length ? list.map(l=>{
+    const d = daysAway(l.followUp);
+    const due = d!==null && d<=7 && l.status!=='Closed/Won' && l.status!=='Lost Sale';
+    return '<div class="row" onclick="go(\'lead\',{id:'+l.id+'})">'
+      + '<div class="row-head"><div><div class="row-title">'+esc(l.name)+'</div>'
+      + '<div class="row-meta">'+esc(l.machine)+' · '+esc(l.rep)+'<br><span style="color:#e08c00">'+stars(l.priority)+'</span>'
+      + (l.followUp?' · follow up '+esc(l.followUp)+(due?' <b style="color:'+(d<0?'#b91c1c':'var(--amber)')+'">'+(d<0?'overdue':d===0?'today':'soon')+'</b>':''):'')
+      + '</div></div>'+badge(l.status)+'</div>'
+      + '<div class="row-actions">'
+      + '<button class="abtn" style="background:var(--green)" onclick="event.stopPropagation();go(\'lead\',{id:'+l.id+'})">View</button>'
+      + '<button class="abtn" style="background:var(--blue)" onclick="event.stopPropagation();editLead('+l.id+')">Edit</button>'
+      + '<button class="abtn" style="background:var(--navy);flex:2" onclick="event.stopPropagation();quoteFromLead('+l.id+')">📄 Quote</button>'
+      + '</div></div>';
+  }).join('') : empty('👥','No leads match that search.');
+  return { html: navbar('Sales Leads', db.leads.length+' total')
+    + search('Search name, machine or rep')
+    + chips(['All'].concat(LEAD_STATUSES), S.filter, 'setFilter')
+    + '<div class="body"><div class="pad" style="padding-top:0">'+rows+'</div></div>'
+    + '<div class="footerbar"><button class="btn green" onclick="newLead()">+ Add New Lead</button></div>' + tabbar() };
+}
+function scr_lead(){
+  const l = db.leads.find(x=>x.id===S.params.id);
+  if(!l) return { html: navbar('Lead') + empty('❓','Lead not found.') + tabbar() };
+  const d = daysAway(l.followUp);
+  const statusOpts = LEAD_STATUSES.map(s=>'<option'+(s===l.status?' selected':'')+'>'+s+'</option>').join('');
+  const body = '<div class="pad">'
+    + '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start">'
+    + '<div><div class="card-label">Customer</div><div class="card-value">'+esc(l.name)+'</div></div>'+badge(l.status)+'</div>'
+    + '<div style="font-size:12px;color:var(--soft);margin-top:7px">📞 '+esc(l.phone)+' · Rep: '+esc(l.rep)+'</div>'
+    + '<div style="font-size:12px;color:var(--soft);margin-top:2px">Interested in '+esc(l.machine)+' · <span style="color:#e08c00">'+stars(l.priority)+'</span></div>'
+    + '<div style="display:flex;gap:7px;margin-top:10px">'
+    + '<button class="btn green" style="font-size:12px;padding:10px" onclick="callLead('+l.id+')">📞 Call</button>'
+    + '<button class="btn dark" style="font-size:12px;padding:10px" onclick="toast(\'Opening messages…\')">💬 Text</button></div></div>'
+    + '<div class="card"><div class="card-label">Status</div>'
+    + '<select class="inp" style="margin-top:6px" onchange="setLeadStatus('+l.id+',this.value)">'+statusOpts+'</select></div>'
+    + '<div class="card" style="border-left:3px solid '+(d!==null&&d<=0?'#b91c1c':'var(--blue)')+'"><div class="card-label">Next follow-up</div>'
+    + '<div class="card-value" style="font-size:15px;color:'+(d!==null&&d<=0?'#b91c1c':'var(--blue)')+'">'+esc(l.followUp||'Not set')+' 🔔</div>'
+    + (d!==null?'<div style="font-size:11.5px;color:var(--soft);margin-top:2px">'+(d<0?Math.abs(d)+' days overdue':d===0?'Due today':'In '+d+' days')+'</div>':'')+'</div>'
+    + '<div class="card-label" style="margin:14px 0 8px">Notes · '+l.notes.length+'</div>'
+    + l.notes.map(n=>'<div class="note"><div class="txt">'+esc(n.t)+'</div><div class="by">'+esc(n.d)+' · '+esc(n.by)+'</div></div>').join('')
+    + '<div class="fg" style="margin-top:6px"><textarea class="inp" id="newnote" style="height:64px" placeholder="Add a note…"></textarea></div>'
+    + '<button class="btn ghost full" style="margin-bottom:12px" onclick="addNote('+l.id+')">＋ Add note</button>'
+    + '</div>';
+  return { html: navbar(l.name, l.machine)
+    + '<div class="body">'+body+'</div>'
+    + '<div class="footerbar"><button class="btn blue" onclick="editLead('+l.id+')">✏️ Edit</button>'
+    + '<button class="btn navy" style="flex:2" onclick="quoteFromLead('+l.id+')">📄 Create quote</button></div>' + tabbar() };
+}
+function callLead(id){ const l=db.leads.find(x=>x.id===id); toast('Calling '+l.name+' on '+l.phone+'…'); }
+function setLeadStatus(id, v){ const l = db.leads.find(x=>x.id===id); l.status=v;
+  l.notes.unshift({t:'Status changed to '+v+'.', d:dstr(today), by:ME.full}); save(); render(); toast('Status set to '+v,'good'); }
+function addNote(id){ const el = document.getElementById('newnote'); const v = (el&&el.value||'').trim();
+  if(!v){ toast('Type a note first','warn'); return; }
+  const l = db.leads.find(x=>x.id===id); l.notes.unshift({t:v, d:dstr(today), by:ME.full}); save(); render(); toast('Note added','good'); }
+function quoteFromLead(id){ const l = db.leads.find(x=>x.id===id);
+  newQuote({ customer:l.name, model:l.machine, brand:(l.machine.split(' ')[0]||'') }); toast('Lead details carried over'); }
+
+function newLead(){ S.form = { id:null, name:'', phone:'', machine:'', status:'New', priority:2, followUp:'', note:'' }; S.sheet=false; go('lead-form'); }
+function editLead(id){ const l = db.leads.find(x=>x.id===id);
+  S.form = { id:l.id, name:l.name, phone:l.phone, machine:l.machine, status:l.status, priority:l.priority, followUp:l.followUp, note:'' }; go('lead-form'); }
+
+function scr_lead_form(){
+  const f = S.form, e = f._err||{};
+  const body = '<div class="pad">'
+    + '<div class="fg"><label>Customer name</label><input class="inp '+(e.name?'err':'')+'" value="'+esc(f.name)+'" placeholder="Search or type new…" oninput="fset(\'name\',this.value)">'
+    + (e.name?'<div class="errmsg">'+e.name+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Phone</label><input class="inp" inputmode="tel" value="'+esc(f.phone)+'" placeholder="e.g. 07700 900000" oninput="fset(\'phone\',this.value)"></div>'
+    + '<div class="fg"><label>Machine of interest</label><input class="inp '+(e.machine?'err':'')+'" value="'+esc(f.machine)+'" placeholder="e.g. Kubota ZD 1211" oninput="fset(\'machine\',this.value)">'
+    + (e.machine?'<div class="errmsg">'+e.machine+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Status</label><select class="inp" onchange="fset(\'status\',this.value)">'
+    + LEAD_STATUSES.map(s=>'<option'+(s===f.status?' selected':'')+'>'+s+'</option>').join('')+'</select></div>'
+    + '<div class="fg"><label>Priority</label><div class="starrow">'
+    + [1,2,3,4].map(n=>'<button class="star '+(f.priority===n?'on':'')+'" onclick="fsetR(\'priority\','+n+')">'+stars(n)+'</button>').join('')+'</div></div>'
+    + '<div class="fg"><label>Follow-up date</label><input class="inp '+(e.followUp?'err':'')+'" value="'+esc(f.followUp)+'" placeholder="DD / MM / YYYY" oninput="fset(\'followUp\',this.value)">'
+    + (e.followUp?'<div class="errmsg">'+e.followUp+'</div>':'<div style="font-size:11px;color:var(--soft)">🔔 You get a reminder on this date</div>')+'</div>'
+    + (f.id?'':'<div class="fg"><label>Opening note <span class="opt">optional</span></label><textarea class="inp" style="height:64px" placeholder="Key details…" oninput="fset(\'note\',this.value)">'+esc(f.note)+'</textarea></div>')
+    + '</div>';
+  return { html: navbar(f.id?'Edit Lead':'New Sales Lead', f.id?f.name:'')
+    + '<div class="body">'+body+'</div>'
+    + '<div class="footerbar"><button class="btn ghost" onclick="back()">Cancel</button>'
+    + '<button class="btn green" style="flex:2" onclick="saveLead()">💾 Save lead</button></div>' };
+}
+function saveLead(){
+  const f = S.form, err = {};
+  if(!f.name.trim()) err.name='Customer name is required';
+  if(!f.machine.trim()) err.machine='What are they interested in?';
+  if(f.followUp.trim() && !parseDate(f.followUp)) err.followUp='Use DD/MM/YYYY';
+  if(Object.keys(err).length){ failValidation(f, err); return; }
+  let id;
+  if(f.id){ const l = db.leads.find(x=>x.id===f.id);
+    Object.assign(l, {name:f.name.trim(), phone:f.phone.trim(), machine:f.machine.trim(), status:f.status, priority:f.priority, followUp:f.followUp.trim()});
+    id = l.id; }
+  else { id = db.seq.lead++;
+    db.leads.unshift({ id, name:f.name.trim(), phone:f.phone.trim()||'—', machine:f.machine.trim(), status:f.status,
+      priority:f.priority, followUp:f.followUp.trim(), rep:ME.full,
+      notes: f.note.trim()?[{t:f.note.trim(), d:dstr(today), by:ME.full}]:[{t:'Lead created.', d:dstr(today), by:ME.full}] }); }
+  save(); S.stack = S.stack.filter(s=>s.screen!=='lead-form'); jump('lead',{id});
+  toast(f.id?'Lead updated':'Lead saved','good');
+}
+
+/* ═══════════════ SITE VISITS ═══════════════ */
+function scr_visits(){
+  const q = S.q.toLowerCase();
+  const list = db.visits.filter(v=>(v.customer+' '+v.purpose).toLowerCase().includes(q));
+  const rows = list.length ? list.map(v=>{
+    const d = daysAway(v.revisit);
+    return '<div class="row" onclick="go(\'visit\',{id:'+v.id+'})">'
+      + '<div class="row-title">'+esc(v.customer)+'</div>'
+      + '<div class="row-meta">📅 '+esc(v.date)+' · '+esc(v.rep)+'</div>'
+      + '<div style="font-size:12.5px;color:#444;line-height:1.5;margin-top:6px">'+esc(v.purpose.length>110?v.purpose.slice(0,110)+'…':v.purpose)+'</div>'
+      + (v.revisit?'<div style="font-size:11.5px;font-weight:700;margin-top:7px;color:'+(d<0?'#b91c1c':d<=7?'var(--amber)':'var(--green)')+'">'
+          +'Revisit '+esc(v.revisit)+' 🔔'+(d<0?' · overdue':d<=7?' · due soon':'')+'</div>':'')
+      + '</div>';
+  }).join('') : empty('📍','No site visits logged yet.');
+  return { html: navbar('Site Visits', db.visits.length+' logged')
+    + search('Search customer or notes')
+    + '<div class="body"><div class="pad" style="padding-top:0">'+rows+'</div></div>'
+    + '<div class="footerbar"><button class="btn purple" onclick="newVisit()">+ Log New Site Visit</button></div>' + tabbar() };
+}
+function scr_visit(){
+  const v = db.visits.find(x=>x.id===S.params.id);
+  if(!v) return { html: navbar('Site Visit') + empty('❓','Visit not found.') + tabbar() };
+  const d = daysAway(v.revisit);
+  const body = '<div class="pad">'
+    + '<div class="card"><div class="card-label">Customer</div><div class="card-value">'+esc(v.customer)+'</div>'
+    + '<div style="font-size:11.5px;color:var(--soft);margin-top:4px">Visited '+esc(v.date)+' · '+esc(v.rep)+'</div></div>'
+    + '<div class="card"><div class="card-label">Purpose &amp; discussion</div>'
+    + '<div style="font-size:13px;line-height:1.6;color:#333;margin-top:6px">'+esc(v.purpose)+'</div></div>'
+    + '<div class="card" style="border-left:3px solid '+(!v.revisit?'#ddd':d<0?'#b91c1c':'var(--green)')+'"><div class="card-label">Revisit date</div>'
+    + '<div class="card-value" style="font-size:15px">'+esc(v.revisit||'None set')+(v.revisit?' 🔔':'')+'</div>'
+    + (d!==null?'<div style="font-size:11.5px;color:var(--soft);margin-top:2px">'+(d<0?Math.abs(d)+' days overdue':d===0?'Due today':'In '+d+' days')+'</div>':'')+'</div>'
+    + '<button class="btn ghost full" style="margin-bottom:10px" onclick="editVisit('+v.id+')">✏️ Edit visit</button>'
+    + '<button class="btn navy full" onclick="quoteFromVisit('+v.id+')">📄 Create quote for '+esc(v.customer)+'</button>'
+    + '</div>';
+  return { html: navbar('Site Visit', v.customer) + '<div class="body">'+body+'</div>' + tabbar() };
+}
+function emailQuote(id){ const x=db.quotes.find(q=>q.id===id); toast('Quote PDF emailed to '+x.customer,'good'); }
+function quoteFromVisit(id){ const v = db.visits.find(x=>x.id===id); newQuote({ customer:v.customer }); }
+function newVisit(){ S.form = { id:null, customer:'', purpose:'', revisit:'' }; S.sheet=false; go('visit-form'); }
+function editVisit(id){ const v = db.visits.find(x=>x.id===id); S.form = { id:v.id, customer:v.customer, purpose:v.purpose, revisit:v.revisit }; go('visit-form'); }
+
+function scr_visit_form(){
+  const f = S.form, e = f._err||{};
+  const body = '<div class="pad">'
+    + '<div class="banner green">ℹ️ Three fields only — keep it quick from the cab.</div>'
+    + '<div class="fg"><label>Customer</label><input class="inp '+(e.customer?'err':'')+'" value="'+esc(f.customer)+'" placeholder="Search or enter name…" oninput="fset(\'customer\',this.value)">'
+    + (e.customer?'<div class="errmsg">'+e.customer+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Purpose of visit &amp; discussion points</label>'
+    + '<textarea class="inp '+(e.purpose?'err':'')+'" style="height:150px" placeholder="Purpose, what was discussed, next steps…" oninput="fset(\'purpose\',this.value)">'+esc(f.purpose)+'</textarea>'
+    + (e.purpose?'<div class="errmsg">'+e.purpose+'</div>':'')+'</div>'
+    + '<div class="fg"><label>Revisit date <span class="opt">optional</span></label><input class="inp '+(e.revisit?'err':'')+'" value="'+esc(f.revisit)+'" placeholder="DD / MM / YYYY" oninput="fset(\'revisit\',this.value)">'
+    + (e.revisit?'<div class="errmsg">'+e.revisit+'</div>':'<div style="font-size:11px;color:var(--soft)">🔔 Reminder notification on this date</div>')+'</div>'
+    + '</div>';
+  return { html: navbar(f.id?'Edit Site Visit':'Log Site Visit', f.id?f.customer:dstr(today))
+    + '<div class="body">'+body+'</div>'
+    + '<div class="footerbar"><button class="btn ghost" onclick="back()">Cancel</button>'
+    + '<button class="btn purple" style="flex:2" onclick="saveVisit()">💾 Save visit</button></div>' };
+}
+function saveVisit(){
+  const f = S.form, err = {};
+  if(!f.customer.trim()) err.customer='Customer is required';
+  if(!f.purpose.trim()) err.purpose='Add a line or two about the visit';
+  if(f.revisit.trim() && !parseDate(f.revisit)) err.revisit='Use DD/MM/YYYY';
+  if(Object.keys(err).length){ failValidation(f, err); return; }
+  let id;
+  if(f.id){ const v = db.visits.find(x=>x.id===f.id); Object.assign(v,{customer:f.customer.trim(), purpose:f.purpose.trim(), revisit:f.revisit.trim()}); id=v.id; }
+  else { id = db.seq.visit++; db.visits.unshift({ id, customer:f.customer.trim(), purpose:f.purpose.trim(), revisit:f.revisit.trim(), date:dstr(today), rep:ME.full }); }
+  save(); S.stack = S.stack.filter(s=>s.screen!=='visit-form'); jump('visit',{id});
+  toast(f.id?'Site visit updated':'Site visit saved','good');
+}
+
+/* ═══════════════ STOCK ═══════════════ */
+function scr_stock(){
+  const q = S.q.toLowerCase();
+  let list = db.stock.filter(s=>(s.model+' '+s.brand+' '+s.cat+' '+s.id).toLowerCase().includes(q));
+  if(S.filter!=='All') list = list.filter(s=>s.brand===S.filter);
+  if(S.filter2!=='All') list = list.filter(s=>s.cond===S.filter2);
+  const brands = ['All'].concat(Array.from(new Set(db.stock.map(s=>s.brand))));
+  const rows = list.length ? list.map(s=>
+    '<div class="row" onclick="go(\'stockitem\',{id:\''+s.id+'\'})"><div class="stockrow">'
+    + '<div class="agebar" style="background:'+ageColor(s.age)+'"></div><div style="flex:1">'
+    + '<div class="row-head"><div><div class="row-title">'+esc(s.model)+'</div>'
+    + '<div class="row-meta">'+esc(s.cond)+' · '+esc(s.cat)+' · '+esc(s.depot)+'<br>'+money(s.price)+' · '
+    + '<span style="color:'+ageColor(s.age)+';font-weight:700">'+s.age+' mth in stock</span></div></div>'+badge(s.status)+'</div>'
+    + '<div class="row-actions">'
+    + '<button class="abtn" style="background:var(--green);flex:2" onclick="event.stopPropagation();quoteFromStock(\''+s.id+'\')">📄 Quote</button>'
+    + (s.status==='Available'
+        ? '<button class="abtn" style="background:var(--amber);flex:2" onclick="event.stopPropagation();allocate(\''+s.id+'\')">📌 Allocate</button>'
+        : '<button class="abtn ghost" style="flex:2" onclick="event.stopPropagation();release(\''+s.id+'\')">↩ Release</button>')
+    + '</div></div></div></div>').join('') : empty('📦','Nothing in stock matches those filters.');
+  return { html: navbar('Stock', db.stock.filter(s=>s.status==='Available').length+' available')
+    + search('Search model, brand or ref')
+    + chips(brands, S.filter, 'setFilter')
+    + chips(['All','New','Used'], S.filter2, 'setFilter2')
+    + '<div class="listinfo">🟢 under 3 mth · 🟠 3–8 mth · 🔴 over 8 mth in stock</div>'
+    + '<div class="body"><div class="pad" style="padding-top:0">'+rows+'</div></div>' + tabbar() };
+}
+function scr_stockitem(){
+  const s = db.stock.find(x=>x.id===S.params.id);
+  if(!s) return { html: navbar('Stock') + empty('❓','Item not found.') + tabbar() };
+  const body = '<div class="pad">'
+    + '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start">'
+    + '<div><div class="card-label">Machine</div><div class="card-value">'+esc(s.model)+'</div></div>'+badge(s.status)+'</div>'
+    + '<div style="font-size:11.5px;color:var(--soft);margin-top:6px">'+esc(s.id)+' · '+esc(s.brand)+' · '+esc(s.cat)+'</div></div>'
+    + '<div class="card"><div class="kv"><span>Condition</span><span>'+esc(s.cond)+'</span></div>'
+    + '<div class="kv"><span>Depot</span><span>'+esc(s.depot)+'</span></div>'
+    + '<div class="kv"><span>Time in stock</span><span style="color:'+ageColor(s.age)+';font-weight:700">'+s.age+' months</span></div>'
+    + '<div class="kv total"><span>List price</span><span>'+money(s.price)+'</span></div></div>'
+    + '<button class="btn green full" style="margin-bottom:9px" onclick="quoteFromStock(\''+s.id+'\')">📄 Quote this machine</button>'
+    + (s.status==='Available'
+        ? '<button class="btn amber full" onclick="allocate(\''+s.id+'\')">📌 Allocate to a customer</button>'
+        : '<button class="btn ghost full" onclick="release(\''+s.id+'\')">↩ Release allocation</button>')
+    + '</div>';
+  return { html: navbar(s.model, s.id) + '<div class="body">'+body+'</div>' + tabbar() };
+}
+function quoteFromStock(id){ const s = db.stock.find(x=>x.id===id);
+  newQuote({ customer:'', model:s.model, brand:s.brand, price:String(s.price), stockRef:s.id, spec:s.cond+' · '+s.cat+' · held at '+s.depot }); }
+function allocate(id){ const s = db.stock.find(x=>x.id===id); s.status='Allocated'; save(); render(); toast(s.model+' allocated','good'); }
+function release(id){ const s = db.stock.find(x=>x.id===id); s.status='Available'; save(); render(); toast(s.model+' released back to stock'); }
+
+/* ═══════════════ ACCOUNT ═══════════════ */
+function scr_account(){
+  const myQuotes = db.quotes.filter(q=>q.rep===ME.full).length;
+  const won = db.orders.length;
+  const body = '<div class="pad">'
+    + '<div class="card" style="text-align:center;padding-top:18px">'
+    + '<div style="margin-bottom:14px">' + logoMark('big') + '</div>'
+    + '<div style="font-size:17px;font-weight:800">'+esc(ME.full)+'</div>'
+    + '<div style="font-size:12px;color:var(--soft);margin-top:2px">'+esc(ME.role)+' · '+esc(ME.depot)+'</div></div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:12px">'
+    + '<div class="card" style="flex:1;margin:0;text-align:center"><div style="font-size:21px;font-weight:800">'+myQuotes+'</div><div class="card-label">My quotes</div></div>'
+    + '<div class="card" style="flex:1;margin:0;text-align:center"><div style="font-size:21px;font-weight:800;color:var(--green)">'+won+'</div><div class="card-label">Orders won</div></div></div>'
+    + '<div class="card-label" style="margin:4px 0 8px">Settings</div>'
+    + '<div class="acc-item" onclick="toggleSetting(\'notifications\')"><span class="ai">🔔</span>Follow-up reminders<div class="switch '+(db.settings.notifications?'on':'')+'"></div></div>'
+    + '<div class="acc-item" onclick="toggleSetting(\'offline\')"><span class="ai">📶</span>Work offline in the field<div class="switch '+(db.settings.offline?'on':'')+'"></div></div>'
+    + '<div class="acc-item" onclick="toast(\'Syncing with the back office…\')"><span class="ai">🔄</span>Sync now<span class="av">2 min ago</span></div>'
+    + '<div class="acc-item" onclick="toast(\'Depot switching not in this demo\')"><span class="ai">🏢</span>Depot<span class="av">Depot 1</span></div>'
+    + '<div class="acc-item" onclick="toast(\'Support: 028 9000 0000\')"><span class="ai">💬</span>Help &amp; support</div>'
+    + '<div class="acc-item" onclick="resetDemo()"><span class="ai">↺</span>Reset demo data</div>'
+    + '<div style="text-align:center;font-size:11px;color:var(--soft);margin:16px 0 4px">J.B. Barrett Tractors · Sales v2.0 prototype</div>'
+    + '</div>';
+  return { html: navbar('Account', ME.full) + '<div class="body">'+body+'</div>' + tabbar('account') };
+}
+function toggleSetting(k){ db.settings[k] = !db.settings[k]; save(); render(); toast(k==='notifications'?('Reminders '+(db.settings[k]?'on':'off')):('Offline mode '+(db.settings[k]?'on':'off'))); }
+
+/* ═══════════════ ROUTER ═══════════════ */
+const SCREENS = {
+  'home':scr_home, 'notifications':scr_notifications,
+  'quotes':scr_quotes, 'quote':scr_quote, 'quote-form':scr_quote_form,
+  'orders':scr_orders, 'order':scr_order, 'order-form':scr_order_form,
+  'leads':scr_leads, 'lead':scr_lead, 'lead-form':scr_lead_form,
+  'visits':scr_visits, 'visit':scr_visit, 'visit-form':scr_visit_form,
+  'stock':scr_stock, 'stockitem':scr_stockitem, 'account':scr_account
+};
+const MAP = [
+  ['Home', [['home','🏠 Home'],['notifications','🔔 Notifications'],['account','👤 Account']]],
+  ['Quotes', [['quotes','📄 Quotes list'],['quote-form','✏️ New quote']]],
+  ['Sales Orders', [['orders','🛒 Orders list'],['order-form','✏️ New order']]],
+  ['Sales Leads', [['leads','👥 Leads list'],['lead-form','✏️ New lead']]],
+  ['Site Visits', [['visits','📍 Visits list'],['visit-form','✏️ Log visit']]],
+  ['Stock', [['stock','📦 Stock list']]]
+];
+function mapGo(s){
+  if(s==='quote-form') return newQuote();
+  if(s==='lead-form') return newLead();
+  if(s==='visit-form') return newVisit();
+  if(s==='order-form') return newOrder();
+  jump(s);
+}
+function renderMap(){
+  const host = document.getElementById('screenmap'); if(!host) return;
+  host.innerHTML = MAP.map(g =>
+    '<div class="grp">'+g[0]+'</div>' + g[1].map(b =>
+      '<button class="mapbtn '+(S.screen===b[0]?'on':'')+'" onclick="mapGo(\''+b[0]+'\')">'+b[1]+'</button>').join('')
+  ).join('');
+}
+
+let _focus = null;
+function captureFocus(){
+  const el = document.activeElement;
+  if(el && (el.tagName==='INPUT'||el.tagName==='TEXTAREA')) _focus = { id:el.id, cls:el.className, val:el.value, pos:el.selectionStart, ph:el.placeholder };
+  else _focus = null;
+}
+function restoreFocus(){
+  if(!_focus) return;
+  const sel = _focus.id ? document.getElementById(_focus.id)
+            : Array.from(document.querySelectorAll('input,textarea')).find(x=>x.placeholder===_focus.ph);
+  if(sel){ sel.focus(); try{ sel.setSelectionRange(_focus.pos,_focus.pos); }catch(e){} }
+  _focus = null;
+}
+
+function render(){
+  const fn = SCREENS[S.screen] || scr_home;
+  const out = fn();
+  const app = document.getElementById('app');
+  const prev = app.querySelector('.body');
+  const keepScroll = prev && app.dataset.screen===S.screen+JSON.stringify(S.params) ? prev.scrollTop : 0;
+  captureFocus();
+  document.getElementById('statusbar').className = 'statusbar' + (out.navy?' on-navy':'');
+  app.innerHTML = out.html + sheetHTML() + dialogHTML() + toastHTML();
+  app.dataset.screen = S.screen + JSON.stringify(S.params);
+  const b = app.querySelector('.body'); if(b) b.scrollTop = keepScroll;
+  restoreFocus();
+  renderMap();
+}
+function renderBodyOnly(scroll, silent){
+  const fn = SCREENS[S.screen] || scr_home;
+  const out = fn();
+  const app = document.getElementById('app');
+  const cur = app.querySelector('.body'); const sc = scroll!=null ? scroll : (cur?cur.scrollTop:0);
+  captureFocus();
+  app.innerHTML = out.html + sheetHTML() + dialogHTML() + toastHTML();
+  const b = app.querySelector('.body'); if(b) b.scrollTop = sc;
+  restoreFocus();
+  renderMap();
+}
+
+/* The handset is a fixed 390 x 844 and the window rarely is: pick the zoom that fits. */
+const PHONE_W = 390, PHONE_H = 844;
+function fitPhone(){
+  if(window.matchMedia('(max-width:520px) and (pointer:coarse)').matches){
+    document.documentElement.style.setProperty('--phone-scale','1'); return;
+  }
+  const s = Math.max(.35, Math.min(1, (innerWidth-28)/PHONE_W, (innerHeight-28)/PHONE_H));
+  document.documentElement.style.setProperty('--phone-scale', String(s));
+}
+fitPhone();
+addEventListener('resize', fitPhone);
+
+render();
+</script>
+</body>
+</html>
