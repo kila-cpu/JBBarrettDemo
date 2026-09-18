@@ -77,6 +77,7 @@
 
   /* ── TILES ── */
   .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+  .tiles .tile:last-child:nth-child(odd){grid-column:1/-1}
   .tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 12px 12px;cursor:pointer;transition:.12s;position:relative}
   .tile:active{transform:scale(.97)}
   .tile .ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:8px}
@@ -424,7 +425,6 @@ function scr_home(){
     + t("go('leads')",'👥','#EAF6E6','Sales Leads', activeLeads+' active', null)
     + t("go('visits')",'📍','#F5F3FF','Site Visits','Log &amp; revisit', null)
     + t("go('orders')",'🛒','#EFF6FF','Sales Orders', db.orders.length+' confirmed', null)
-    + t("toast('Parts &amp; Service request form — not in this demo')",'🔧','#FEF9C3','Parts &amp; Service','Request forms', null)
     + '</div>';
 
   let dueCard = '';
